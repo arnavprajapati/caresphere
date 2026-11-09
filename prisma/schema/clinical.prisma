@@ -1,0 +1,60 @@
+// ─── CLINICAL VISIT RECORDS, DIAGNOSTIC REPORTS & PRESCRIPTIONS ──────────────
+model VisitRecord {
+  id             String      @id @default(uuid())
+  appointmentId  String      @unique
+  appointment    Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctorId       String
+  doctor         User        @relation("DoctorVisitRecords", fields: [doctorId], references: [id])
+  symptoms       String?     @db.Text
+  diagnosis      String?     @db.Text
+  clinicianNotes String?     @db.Text
+  followUpDate   DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  prescriptions     Prescription[]
+  diagnosticReports DiagnosticReport[]
+
+  @@index([doctorId])
+}
+
+enum DiagnosticReportStatus {
+  ORDERED
+  PENDING
+  COMPLETED
+}
+
+model DiagnosticReport {
+  id            String                 @id @default(uuid())
+  visitRecordId String
+  visitRecord   VisitRecord            @relation(fields: [visitRecordId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        User                   @relation("DoctorDiagnosticReports", fields: [doctorId], references: [id])
+  reportTitle   String
+  reportType    String                 @default("Lab Test")
+  status        DiagnosticReportStatus @default(ORDERED)
+  reportDate    DateTime?
+  referenceCode String?
+  summary       String?                @db.Text
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([visitRecordId])
+  @@index([doctorId])
+}
+
+model Prescription {
+  id            String      @id @default(uuid())
+  visitRecordId String
+  visitRecord   VisitRecord @relation(fields: [visitRecordId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  medicineName  String
+  dosage        String
+  frequency     String
+  duration      String
+  instructions  String?     @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@index([visitRecordId])
+}

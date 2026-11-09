@@ -1,0 +1,16 @@
+// ─── SYSTEM AUDIT TRAIL (Acceptance Test #5) ─────────────────────────────────
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  action       String   // VIEW_RECORD, UPDATE_PRESCRIPTION, CREATE_INVOICE, etc.
+  resourceType String   // Appointment, VisitRecord, Invoice, etc.
+  resourceId   String
+  details      String?  @db.Text // JSON string with change details
+  ipAddress    String?
+  timestamp    DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([resourceType, resourceId])
+  @@index([action, timestamp])
+}

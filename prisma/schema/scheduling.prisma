@@ -1,0 +1,79 @@
+// ─── AVAILABILITY & APPOINTMENT SCHEDULING ───────────────────────────────────
+model Availability {
+  id        String     @id @default(uuid())
+  doctorId  String
+  doctor    User       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  startTime DateTime
+  endTime   DateTime
+  status    SlotStatus @default(AVAILABLE)
+
+  @@unique([doctorId, startTime]) // Prevent duplicate slots for same doctor/time
+  @@index([doctorId, startTime])
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+model WeeklyAvailability {
+  id        String  @id @default(uuid())
+  doctorId  String
+  doctor    User    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  dayOfWeek Int     // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime String  // "09:00"
+  endTime   String  // "17:00"
+  isActive  Boolean @default(true)
+
+  @@unique([doctorId, dayOfWeek])
+  @@index([doctorId])
+}
+
+model AvailabilityOverride {
+  id        String   @id @default(uuid())
+  doctorId  String
+  doctor    User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  date      String   // "YYYY-MM-DD"
+  isBlocked Boolean  @default(false)
+  startTime String?
+  endTime   String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([doctorId, date])
+  @@index([doctorId, date])
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  patientId          String
+  patient            User              @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctorId           String
+  doctor             User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  startTime          DateTime
+  endTime            DateTime
+  status             AppointmentStatus @default(SCHEDULED)
+  patientDescription String?           @db.Text
+  videoSessionId     String?
+  videoSessionToken  String?           @db.Text
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  // Relations
+  visitRecord VisitRecord?
+  invoice     Invoice?
+
+  @@unique([doctorId, startTime]) // DB-level double-booking prevention (Acceptance Test #2)
+  @@index([status, startTime])
+  @@index([doctorId, startTime])
+  @@index([patientId, status])
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}

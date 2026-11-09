@@ -1,0 +1,78 @@
+// ─── USER & DEPARTMENT ─────────────────────────────────────────────────────────
+model User {
+  id              String    @id @default(uuid())
+  clerkUserId     String    @unique
+  email           String    @unique
+  name            String?
+  imageUrl        String?
+  phone           String?
+  role            UserRole  @default(UNASSIGNED)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Patient-specific fields
+  dateOfBirth      DateTime?
+  gender           Gender?
+  bloodGroup       String?
+  emergencyContact String?
+  address          String?   @db.Text
+
+  // Doctor-specific fields
+  specialty          String?
+  qualification      String?
+  experience         Int?
+  credentialUrl      String?
+  description        String?             @db.Text
+  consultationFee    Float?              @default(500)
+  verificationStatus VerificationStatus? @default(PENDING)
+  departmentId       String?
+  department         Department?         @relation(fields: [departmentId], references: [id])
+
+  // Billing / Credits
+  credits Int @default(0)
+
+  // Relations
+  patientAppointments   Appointment[]          @relation("PatientAppointments")
+  doctorAppointments    Appointment[]          @relation("DoctorAppointments")
+  availabilities        Availability[]
+  weeklyAvailabilities  WeeklyAvailability[]
+  availabilityOverrides AvailabilityOverride[]
+  visitRecords          VisitRecord[]          @relation("DoctorVisitRecords")
+  prescriptions         Prescription[]         @relation("DoctorPrescriptions")
+  diagnosticReports     DiagnosticReport[]     @relation("DoctorDiagnosticReports")
+  patientInvoices       Invoice[]              @relation("PatientInvoices")
+  creditTransactions    CreditTransaction[]
+  auditLogs             AuditLog[]
+
+  @@index([role])
+}
+
+enum UserRole {
+  UNASSIGNED
+  PATIENT
+  DOCTOR
+  FRONT_DESK
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctors User[]
+}

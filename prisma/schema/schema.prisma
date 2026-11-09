@@ -1,0 +1,11 @@
+// Hospital Management System — Prisma Configuration
+// Multi-file schema directory configured via package.json ("prisma.schema": "prisma/schema")
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

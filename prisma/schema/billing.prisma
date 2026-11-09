@@ -1,0 +1,86 @@
+// ─── BILLING, INVOICES, PAYMENTS & CREDITS ───────────────────────────────────
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique @default(uuid())
+  patientId     String
+  patient       User          @relation("PatientInvoices", fields: [patientId], references: [id])
+  appointmentId String?       @unique
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+  totalAmount   Float         @default(0)
+  status        InvoiceStatus @default(UNPAID)
+  dueDate       DateTime?
+  notes         String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lineItems InvoiceItem[]
+  payments  Payment[]
+
+  @@index([patientId, status])
+  @@index([status])
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  unitPrice   Float
+  quantity    Int     @default(1)
+  amount      Float   // unitPrice * quantity
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  invoiceId      String
+  invoice        Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount         Float
+  paymentMethod  PaymentMethod @default(CASH)
+  transactionRef String?
+  status         PaymentStatus @default(SUCCESS)
+  paidAt         DateTime      @default(now())
+
+  @@index([invoiceId])
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  INSURANCE
+  SIMULATED_GATEWAY
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum TransactionType {
+  CREDIT_PURCHASE
+  APPOINTMENT_DEDUCTION
+  ADMIN_ADJUSTMENT
+}
+
+model CreditTransaction {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int
+  type        TransactionType
+  packageId   String?
+  description String?
+  createdAt   DateTime        @default(now())
+
+  @@index([userId, createdAt])
+}
