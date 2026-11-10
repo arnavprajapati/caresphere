@@ -65,8 +65,13 @@ export async function addInvoiceItem(formData) {
   if (!userId) throw new Error("Unauthorized");
 
   const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-  if (!user || (user.role !== ROLES.FRONT_DESK && user.role !== ROLES.ADMIN)) {
-    throw new Error("FORBIDDEN: Only Front-Desk and Admin can modify invoices");
+  const isVerifiedStaff =
+    user &&
+    ((user.role === ROLES.FRONT_DESK &&
+      user.verificationStatus === "VERIFIED") ||
+      user.role === ROLES.ADMIN);
+  if (!isVerifiedStaff) {
+    throw new Error("FORBIDDEN: Only verified Front-Desk and Admin can modify invoices");
   }
 
   const invoiceId = formData.get("invoiceId");

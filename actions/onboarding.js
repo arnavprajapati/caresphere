@@ -39,23 +39,11 @@ export async function setUserRole(formData) {
 
   const role = formData.get("role");
 
-  if (!role || !["PATIENT", "DOCTOR", "FRONT_DESK", "ADMIN"].includes(role)) {
+  if (!role || !["PATIENT", "DOCTOR", "FRONT_DESK"].includes(role)) {
     throw new Error("Invalid role selection");
   }
 
   try {
-    if (role === "ADMIN") {
-      await db.user.update({
-        where: { clerkUserId: userId },
-        data: { role: "ADMIN" },
-      });
-
-      revalidatePath("/", "layout");
-      revalidatePath("/onboarding");
-      revalidatePath("/admin");
-      return { success: true, redirect: "/admin" };
-    }
-
     if (role === "PATIENT") {
       await db.user.update({
         where: { clerkUserId: userId },
@@ -71,13 +59,18 @@ export async function setUserRole(formData) {
     if (role === "FRONT_DESK") {
       await db.user.update({
         where: { clerkUserId: userId },
-        data: { role: "FRONT_DESK" },
+        data: {
+          role: "FRONT_DESK",
+          verificationStatus: "PENDING",
+        },
       });
 
       revalidatePath("/", "layout");
       revalidatePath("/onboarding");
       revalidatePath("/front-desk");
-      return { success: true, redirect: "/front-desk" };
+      revalidatePath("/front-desk-verification");
+      revalidatePath("/admin");
+      return { success: true, redirect: "/front-desk-verification" };
     }
 
     if (role === "DOCTOR") {

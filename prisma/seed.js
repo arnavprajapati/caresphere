@@ -472,12 +472,13 @@ async function main() {
   // 3. Seed Demo Front-Desk Staff
   await prisma.user.upsert({
     where: { email: "frontdesk@hospital.test" },
-    update: { role: "FRONT_DESK" },
+    update: { role: "FRONT_DESK", verificationStatus: "VERIFIED" },
     create: {
       clerkUserId: "seed_frontdesk_1",
       email: "frontdesk@hospital.test",
       name: "Kavita Rao (Front Desk)",
       role: "FRONT_DESK",
+      verificationStatus: "VERIFIED",
       phone: "+91 98765 43210",
     },
   });

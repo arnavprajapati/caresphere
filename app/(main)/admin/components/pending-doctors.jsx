@@ -189,7 +189,7 @@ export function PendingDoctors({ initialDoctors = [], doctors: propDoctors }) {
                         <div className="flex items-center gap-2.5 self-end md:self-auto">
                           <Badge
                             variant="outline"
-                            className="bg-slate-100 border-slate-300 text-black text-xs px-3 py-1 rounded-md font-semibold"
+                            className="bg-slate-100 border-slate-300 text-black text-xs px-3 py-1 rounded-[6px] font-semibold"
                           >
                             Pending Review
                           </Badge>

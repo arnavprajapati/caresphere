@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole, ROLES } from "@/lib/rbac";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Users, FileText, ArrowLeft } from "lucide-react";
+import { AlertCircle, Users, FileText, ArrowLeft, ClipboardList } from "lucide-react";
 
 export const metadata = {
   title: "Admin Panel - Hospital Management System",
@@ -43,6 +43,13 @@ export default async function AdminLayout({ children }) {
           >
             <AlertCircle className="h-4 w-4 mr-2.5 shrink-0" />
             <span>Doctor Verification</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="front-desk"
+            className="cursor-pointer flex items-center justify-start px-3.5 py-2.5 w-full rounded-md text-sm font-medium !bg-white !text-slate-800 hover:!bg-slate-100 hover:!text-black data-[state=active]:!bg-black data-[state=active]:!text-white data-[state=active]:font-semibold transition-colors shadow-none"
+          >
+            <ClipboardList className="h-4 w-4 mr-2.5 shrink-0" />
+            <span>Front-Desk Staff</span>
           </TabsTrigger>
           <TabsTrigger
             value="doctors"

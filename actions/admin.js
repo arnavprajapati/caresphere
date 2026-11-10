@@ -231,3 +231,65 @@ export async function updateUserRole(targetUserId, newRole) {
     throw new Error("Unable to update user role right now. Please try again.");
   }
 }
+
+/**
+ * Gets all Front-Desk staff accounts (pending, verified, and declined) for Admin review.
+ */
+export async function getFrontDeskStaff() {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized: Admin role required");
+
+  try {
+    const staff = await db.user.findMany({
+      where: { role: ROLES.FRONT_DESK },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        verificationStatus: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { staff };
+  } catch (error) {
+    console.error("Failed to fetch front-desk staff:", error);
+    return { staff: [] };
+  }
+}
+
+/**
+ * Approves, rejects, or suspends a Front-Desk staff account (Admin-only).
+ */
+export async function updateFrontDeskStatus(staffId, status) {
+  const isAdmin = await verifyAdmin();
+  if (!isAdmin) throw new Error("Unauthorized");
+
+  if (!staffId || !["VERIFIED", "REJECTED", "PENDING"].includes(status)) {
+    throw new Error("Invalid input");
+  }
+
+  try {
+    const updated = await db.user.update({
+      where: { id: staffId, role: ROLES.FRONT_DESK },
+      data: { verificationStatus: status },
+    });
+
+    await createAuditLog({
+      action: `FRONT_DESK_${status}`,
+      resourceType: "User",
+      resourceId: staffId,
+      details: { staffName: updated.name, email: updated.email, status },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/front-desk");
+    revalidatePath("/front-desk-verification");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update front-desk status:", error);
+    throw new Error("Unable to update front-desk status right now. Please try again.");
+  }
+}

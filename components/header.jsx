@@ -25,7 +25,12 @@ const ROLE_DASHBOARD_LINKS = {
 
 export default async function Header() {
   const user = await checkUser();
-  const dashboardLinks = user?.role ? ROLE_DASHBOARD_LINKS[user.role] ?? [] : [];
+  const dashboardLinks =
+    user?.role === "FRONT_DESK" && user.verificationStatus !== "VERIFIED"
+      ? [{ href: "/front-desk-verification", label: "Approval Status", Icon: ClipboardList }]
+      : user?.role
+      ? ROLE_DASHBOARD_LINKS[user.role] ?? []
+      : [];
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 z-50 shadow-xs">

@@ -132,7 +132,11 @@ export async function bookAppointment(formData) {
     let patientId = null;
     if (currentUser.role === "PATIENT") {
       patientId = currentUser.id;
-    } else if (currentUser.role === "FRONT_DESK" || currentUser.role === "ADMIN") {
+    } else if (
+      (currentUser.role === "FRONT_DESK" &&
+        currentUser.verificationStatus === "VERIFIED") ||
+      currentUser.role === "ADMIN"
+    ) {
       if (!requestedPatientId) {
         throw new Error("Please select or register a patient before booking an appointment.");
       }
@@ -740,7 +744,9 @@ export async function rescheduleAppointment(formData) {
     }
 
     const isStaffManager =
-      currentUser.role === "FRONT_DESK" || currentUser.role === "ADMIN";
+      (currentUser.role === "FRONT_DESK" &&
+        currentUser.verificationStatus === "VERIFIED") ||
+      currentUser.role === "ADMIN";
     const isAuthorized =
       appointment.patientId === currentUser.id ||
       appointment.doctorId === currentUser.id ||

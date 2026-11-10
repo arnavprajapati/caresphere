@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Onboarding - MediCare",
-  description: "Complete your profile to get started with MediCare",
+  title: "Onboarding - CareSphere",
+  description: "Complete your profile to get started with CareSphere",
 };
 
 export default async function OnboardingLayout({ children }) {
@@ -21,7 +21,11 @@ export default async function OnboardingLayout({ children }) {
         redirect("/doctor/verification");
       }
     } else if (user.role === "FRONT_DESK") {
-      redirect("/front-desk");
+      if (user.verificationStatus === "VERIFIED") {
+        redirect("/front-desk");
+      } else {
+        redirect("/front-desk-verification");
+      }
     } else if (user.role === "ADMIN") {
       redirect("/admin");
     }

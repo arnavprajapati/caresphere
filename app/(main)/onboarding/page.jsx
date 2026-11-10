@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Stethoscope, ClipboardList, ShieldCheck, Loader2 } from "lucide-react";
+import { User, Stethoscope, ClipboardList, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,19 +105,10 @@ export default function OnboardingPage() {
       role: "FRONT_DESK",
       title: "Front-Desk",
       description:
-        "Register patients, book appointments, and manage billing invoices",
-      buttonLabel: "Continue as Front-Desk",
+        "Register patients, book appointments, and manage billing invoices (requires admin approval)",
+      buttonLabel: "Request Front-Desk Access",
       icon: ClipboardList,
       onSelect: () => handleRoleSelection("FRONT_DESK"),
-    },
-    {
-      role: "ADMIN",
-      title: "Hospital Admin",
-      description:
-        "Verify doctor credentials, audit logs, manage doctor status & system access",
-      buttonLabel: "Continue as Admin",
-      icon: ShieldCheck,
-      onSelect: () => handleRoleSelection("ADMIN"),
     },
   ];
 
@@ -125,18 +116,16 @@ export default function OnboardingPage() {
     return (
       <div className="w-full">
         <div className="text-center mb-10">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-            Tell us how you want to use the platform
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-black tracking-tight">
-            Welcome to MediCare
+          <h1 className="text-3xl sm:text-4xl font-extrabold italic tracking-tight bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent inline-block px-1">
+            Welcome to CareSphere
           </h1>
-          <p className="text-sm text-slate-600 mt-2">
+          <div className="mx-auto mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600" />
+          <p className="text-sm text-slate-600 mt-2.5">
             Please select your role to proceed to your dedicated portal
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto items-stretch">
           {roleCards.map((card) => {
             const Icon = card.icon;
             const isSubmittingThis = loading && pendingRole === card.role;

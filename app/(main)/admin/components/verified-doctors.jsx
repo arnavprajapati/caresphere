@@ -136,7 +136,7 @@ export function VerifiedDoctors({ initialDoctors = [], doctors: propDoctors }) {
                 <>
                   <Badge
                     variant="outline"
-                    className="bg-slate-200 border-slate-300 text-slate-800 text-xs px-3 py-1 rounded-md font-semibold"
+                    className="bg-slate-200 border-slate-300 text-slate-800 text-xs px-3 py-1 rounded-[6px] font-semibold"
                   >
                     Suspended
                   </Badge>
@@ -154,7 +154,7 @@ export function VerifiedDoctors({ initialDoctors = [], doctors: propDoctors }) {
                 <>
                   <Badge
                     variant="outline"
-                    className="bg-black border-black text-white text-xs px-3 py-1 rounded-md font-semibold"
+                    className="bg-black border-black text-white text-xs px-3 py-1 rounded-[6px] font-semibold"
                   >
                     Active
                   </Badge>
@@ -247,7 +247,7 @@ export function VerifiedDoctors({ initialDoctors = [], doctors: propDoctors }) {
                               <>
                                 <Badge
                                   variant="outline"
-                                  className="bg-slate-200 border-slate-300 text-slate-800 text-xs px-3 py-1 rounded-md font-semibold"
+                                  className="bg-slate-200 border-slate-300 text-slate-800 text-xs px-3 py-1 rounded-[6px] font-semibold"
                                 >
                                   Suspended
                                 </Badge>
@@ -269,7 +269,7 @@ export function VerifiedDoctors({ initialDoctors = [], doctors: propDoctors }) {
                               <>
                                 <Badge
                                   variant="outline"
-                                  className="bg-black border-black text-white text-xs px-3 py-1 rounded-md font-semibold"
+                                  className="bg-black border-black text-white text-xs px-3 py-1 rounded-[6px] font-semibold"
                                 >
                                   Active
                                 </Badge>

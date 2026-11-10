@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ClipboardCheck, AlertCircle, XCircle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function VerificationPage() {
   const user = await getCurrentUser();
 
@@ -25,66 +27,64 @@ export default async function VerificationPage() {
   const isRejected = user?.verificationStatus === "REJECTED";
 
   return (
-    <div className="container mx-auto px-4 py-4">
+    <div className="container mx-auto px-4 py-6">
       <div className="max-w-xl mx-auto">
-        <Card className="bg-white border border-slate-200/90 rounded-3xl shadow-sm text-center p-4">
-          <CardHeader className="text-center pb-2">
-            <div
-              className={`mx-auto p-4 ${
-                isRejected ? "bg-rose-50 text-rose-600 border border-rose-100" : "bg-amber-50 text-amber-600 border border-amber-100"
-              } rounded-2xl mb-3 w-fit`}
-            >
+        <Card className="bg-white text-black border border-slate-200 rounded-lg shadow-none text-center py-0 p-6 sm:p-8 gap-0">
+          <CardHeader className="text-center p-0 pb-5">
+            <div className="mx-auto w-14 h-14 bg-slate-100 border border-slate-200 text-black rounded-md mb-4 flex items-center justify-center">
               {isRejected ? (
-                <XCircle className="h-8 w-8" />
+                <XCircle className="h-6 w-6 text-rose-600" />
               ) : (
-                <ClipboardCheck className="h-8 w-8" />
+                <ClipboardCheck className="h-6 w-6 text-black" />
               )}
             </div>
-            <CardTitle className="text-xl font-bold text-slate-900">
+            <CardTitle className="text-2xl sm:text-3xl font-extrabold italic tracking-tight bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent inline-block px-1 mx-auto">
               {isRejected
                 ? "Clinician Verification Declined"
                 : "Verification Under Review"}
             </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
+            <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600" />
+            <CardDescription className="text-sm text-slate-600 mt-3">
               {isRejected
-                ? "Your clinician profile requires credential corrections"
-                : "Your hospital staff profile is queued for hospital administration review"}
+                ? "Your clinician profile requires credential updates"
+                : "Your clinician profile is awaiting verification"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 pt-2">
+
+          <CardContent className="space-y-5 p-0 pt-2">
             {isRejected ? (
-              <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-4 text-left text-xs text-rose-800 space-y-2">
-                <p className="font-semibold">
-                  The medical board requested updates before approving access:
+              <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-left text-xs sm:text-sm text-slate-700 space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-black">
+                  <XCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                  <span>Verification Declined</span>
+                </div>
+                <p className="leading-relaxed">
+                  Please ensure your registration certificate and specialization details are valid, or contact support for assistance.
                 </p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Verify medical council registration certificate</li>
-                  <li>Provide verifiable departmental specialization details</li>
-                </ul>
               </div>
             ) : (
-              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-left text-xs text-amber-800 space-y-1.5">
-                <div className="flex items-center gap-2 font-semibold">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>Pending Administrator Clearance</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-left text-xs sm:text-sm text-slate-700 space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-black">
+                  <AlertCircle className="h-4 w-4 text-black shrink-0" />
+                  <span>Pending Verification</span>
                 </div>
-                <p>
-                  Hospital administrators verify doctor credentials before public patient booking is activated. This generally completes within working hours.
+                <p className="leading-relaxed">
+                  Your credentials are under review. Your doctor portal will unlock once verified.
                 </p>
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
               <Button
                 asChild
                 variant="outline"
-                className="rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold"
+                className="rounded-md bg-white border-slate-300 text-black hover:bg-slate-100 font-semibold h-10 px-5 text-sm shadow-none cursor-pointer"
               >
                 <Link href="/">Back to Home</Link>
               </Button>
               <Button
                 asChild
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                className="rounded-md bg-black hover:bg-neutral-900 text-white font-semibold h-10 px-5 text-sm shadow-none cursor-pointer"
               >
                 <Link href="/doctors">Browse Doctors</Link>
               </Button>

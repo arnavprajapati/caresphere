@@ -22,6 +22,7 @@ export async function getPatientAppointments() {
       select: {
         id: true,
         role: true,
+        verificationStatus: true,
       },
     });
 
@@ -29,8 +30,9 @@ export async function getPatientAppointments() {
       throw new Error("User not found");
     }
 
-    const isStaffViewer =
-      user.role === "FRONT_DESK" || user.role === "ADMIN";
+    const isVerifiedFrontDesk =
+      user.role === "FRONT_DESK" && user.verificationStatus === "VERIFIED";
+    const isStaffViewer = isVerifiedFrontDesk || user.role === "ADMIN";
     const whereClause =
       user.role === "PATIENT"
         ? { patientId: user.id }

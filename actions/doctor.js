@@ -450,7 +450,8 @@ export async function cancelAppointment(formData) {
     }
 
     const isStaffManager =
-      user.role === "FRONT_DESK" || user.role === "ADMIN";
+      (user.role === "FRONT_DESK" && user.verificationStatus === "VERIFIED") ||
+      user.role === "ADMIN";
     if (
       appointment.doctorId !== user.id &&
       appointment.patientId !== user.id &&
