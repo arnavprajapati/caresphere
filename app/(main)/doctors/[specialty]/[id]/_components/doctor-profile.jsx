@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { format } from "date-fns";
 import {
   Card,
@@ -62,6 +63,8 @@ const ALL_SPECIALTIES = [
 
 export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
   const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { redirectToSignIn } = useClerk();
 
   const [selectedSpecialty, setSelectedSpecialty] = useState(
     doctor?.specialty || "General Physician"
@@ -193,6 +196,15 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
       toast.error("Cannot book a past time slot. Please choose an upcoming time.");
       setSelectedSlot(null);
       await refreshLiveSlots();
+      return;
+    }
+
+    if (!isSignedIn) {
+      toast.info("Please sign in to confirm your appointment.");
+      redirectToSignIn({
+        redirectUrl:
+          typeof window !== "undefined" ? window.location.href : "/doctors",
+      });
       return;
     }
 
@@ -546,6 +558,8 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Confirming Your Slot...
                           </>
+                        ) : isLoaded && !isSignedIn ? (
+                          `Sign in to Book Appointment (₹${doctorFee})`
                         ) : (
                           `Confirm & Book Appointment (₹${doctorFee})`
                         )}

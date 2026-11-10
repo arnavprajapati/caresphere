@@ -52,8 +52,8 @@ export function DoctorsFilterSidebar({
   };
 
   return (
-    <Card className="bg-white text-black border border-slate-200 rounded-lg shadow-none py-0 p-6 gap-0 [color-scheme:light]">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-5">
+    <Card className="bg-white text-black border border-slate-200 rounded-lg shadow-none py-0 p-5 gap-0 [color-scheme:light]">
+      <div className="flex items-center justify-between pb-3.5 border-b border-slate-200 mb-4">
         <h2 className="text-base font-bold text-black flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-black" />
           Filters
@@ -69,13 +69,13 @@ export function DoctorsFilterSidebar({
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Filter 1: Specialties (Multi-select instant filter) */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
             Specialties
           </label>
-          <div className="max-h-[216px] overflow-y-auto pr-2 space-y-2 clean-scrollbar [color-scheme:light]">
+          <div className="max-h-[188px] overflow-y-auto pr-2 space-y-2 clean-scrollbar [color-scheme:light]">
             {SPECIALTIES.map((s) => {
               const checked = currentSpecs.some(
                 (item) => item.toLowerCase() === s.name.toLowerCase()

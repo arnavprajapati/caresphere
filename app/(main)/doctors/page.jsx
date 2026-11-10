@@ -52,7 +52,7 @@ export default async function DoctorsPage({ searchParams }) {
         </aside>
 
         {/* ─── RIGHT CONTENT: DOCTOR LISTING ─── */}
-        <main className="lg:col-span-9 space-y-5">
+        <main className="lg:col-span-9 space-y-5 lg:min-h-[max(680px,calc(100vh-5rem))]">
           {/* Active Filter Chips at Top */}
           <ActiveFilterChips
             currentSpecs={currentSpecs}

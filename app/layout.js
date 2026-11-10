@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning className="light">
         <head>
-          <link rel="icon" href="/logo.png" sizes="any" />
+          <link rel="icon" href="/favicon.ico" sizes="any" />
         </head>
         <body className={`${inter.className} bg-white text-slate-900 antialiased`}>
           <ThemeProvider
