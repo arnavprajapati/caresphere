@@ -67,17 +67,17 @@ export default async function Home() {
       {/* ─── HERO SECTION ─── */}
       <section className="relative pt-12 pb-20 sm:pt-16 sm:pb-24 bg-gradient-to-b from-slate-50/90 to-white border-b border-slate-100">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center flex flex-col items-center space-y-5">
+          <div className="max-w-4xl mx-auto text-center flex flex-col items-center space-y-5">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md border border-slate-200 bg-white text-xs font-semibold text-black">
               <Stethoscope className="h-3.5 w-3.5 text-black" />
               In-Clinic Hospital Visits &amp; HD Video Consultations
             </span>
 
             <div className="space-y-2">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-black leading-tight tracking-tight">
-                Consult Verified Doctors <br />
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-black leading-tight tracking-tight">
+                Consult{" "}
                 <span className="italic bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 bg-clip-text text-transparent inline-block px-1">
-                  In-Clinic &amp; Online
+                  Verified Doctors
                 </span>
               </h1>
               <div className="mx-auto mt-2 h-1 w-28 rounded-full bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600" />
