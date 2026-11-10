@@ -43,7 +43,7 @@ export default async function DoctorsPage({ searchParams }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* ─── LEFT SIDEBAR: FILTERS ─── */}
-        <aside className="lg:col-span-3">
+        <aside className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto clean-scrollbar">
           <DoctorsFilterSidebar
             currentSpecs={currentSpecs}
             currentExp={currentExp}

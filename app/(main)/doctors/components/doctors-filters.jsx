@@ -75,7 +75,7 @@ export function DoctorsFilterSidebar({
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5">
             Specialties
           </label>
-          <div className="max-h-60 overflow-y-auto pr-1 space-y-2 [color-scheme:light]">
+          <div className="max-h-[216px] overflow-y-auto pr-2 space-y-2 clean-scrollbar [color-scheme:light]">
             {SPECIALTIES.map((s) => {
               const checked = currentSpecs.some(
                 (item) => item.toLowerCase() === s.name.toLowerCase()
@@ -83,15 +83,15 @@ export function DoctorsFilterSidebar({
               return (
                 <label
                   key={s.name}
-                  className="flex items-center gap-2.5 text-sm text-slate-800 cursor-pointer hover:text-black"
+                  className="flex items-center gap-2.5 text-sm leading-5 text-slate-800 cursor-pointer hover:text-black"
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => handleToggleSpecialty(s.name)}
-                    className="w-4 h-4 accent-black bg-white border-slate-300 rounded cursor-pointer [color-scheme:light]"
+                    className="w-4 h-4 shrink-0 accent-black bg-white border-slate-300 rounded cursor-pointer [color-scheme:light]"
                   />
-                  <span className={checked ? "font-semibold text-black" : ""}>
+                  <span className={`truncate ${checked ? "font-semibold text-black" : ""}`}>
                     {s.name}
                   </span>
                 </label>
