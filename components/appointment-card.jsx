@@ -140,6 +140,7 @@ export function AppointmentCard({
     loading: tokenLoading,
     fn: submitTokenRequest,
     data: tokenData,
+    error: tokenError,
   } = useFetch(generateVideoToken);
 
   const {
@@ -320,10 +321,10 @@ export function AppointmentCard({
       router.push(
         `/video-call?sessionId=${tokenData.videoSessionId}&token=${tokenData.token}&appointmentId=${appointment.id}`
       );
-    } else if (tokenData?.error) {
+    } else if (tokenData?.error || tokenError) {
       setAction(null);
     }
-  }, [tokenData, appointment.id, router]);
+  }, [tokenData, tokenError, appointment.id, router]);
 
   const rescheduleDaySlots = useMemo(() => {
     return (

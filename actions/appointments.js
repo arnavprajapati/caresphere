@@ -402,10 +402,15 @@ export async function generateVideoToken(formData) {
       );
     }
 
-    if (!appointment.videoSessionId) {
-      throw new Error(
-        "No valid video session exists for this appointment."
-      );
+    let sessionId = appointment.videoSessionId;
+    if (!sessionId) {
+      const createdSession = await createVideoSession();
+      if (!createdSession.ok || !createdSession.sessionId) {
+        throw new Error(
+          createdSession.reason || "No valid video session exists for this appointment."
+        );
+      }
+      sessionId = createdSession.sessionId;
     }
 
     // Token expires 1 hour after the scheduled appointment end time
@@ -419,7 +424,7 @@ export async function generateVideoToken(formData) {
       userId: user.id,
     });
 
-    const token = videoClient.generateClientToken(appointment.videoSessionId, {
+    const token = videoClient.generateClientToken(sessionId, {
       role: "publisher",
       expireTime: expirationTime,
       data: connectionData,
@@ -430,13 +435,14 @@ export async function generateVideoToken(formData) {
         id: appointmentId,
       },
       data: {
+        ...(appointment.videoSessionId ? {} : { videoSessionId: sessionId }),
         videoSessionToken: token,
       },
     });
 
     return {
       success: true,
-      videoSessionId: appointment.videoSessionId,
+      videoSessionId: sessionId,
       token: token,
     };
   } catch (error) {
