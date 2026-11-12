@@ -10,6 +10,17 @@ import { Vonage } from "@vonage/server-sdk";
 import { addDays, addMinutes, format, isBefore, endOfDay } from "date-fns";
 import { Auth } from "@vonage/auth";
 import { MediaMode } from "@vonage/video";
+import {
+  getClinicDateString,
+  addDaysToDateString,
+  getClinicDayOfWeekFromDateStr,
+  getClinicDayOfWeek,
+  formatClinicDateStr,
+  clinicTimeToUtcDate,
+  formatInClinicTz,
+  formatTime12h,
+  addMinutesToHHMM,
+} from "@/lib/date-utils";
 
 /**
  * Resolves a Vonage private key from an env var (PEM text, escaped-\n PEM, or file path)
@@ -187,7 +198,7 @@ export async function bookAppointment(formData) {
     const videoSessionId = videoResult.ok ? videoResult.sessionId : null;
 
     const consultationFee = doctor.consultationFee || 500;
-    const bookingDateStr = format(startTime, "yyyy-MM-dd");
+    const bookingDateStr = formatInClinicTz(startTime, "yyyy-MM-dd");
 
     // Concurrency Protection: Interactive Transaction
     const result = await db.$transaction(async (tx) => {
@@ -437,8 +448,13 @@ export async function generateVideoToken(formData) {
       data: {
         ...(appointment.videoSessionId ? {} : { videoSessionId: sessionId }),
         videoSessionToken: token,
+        ...(appointment.status === "SCHEDULED" ? { status: "IN_PROGRESS" } : {}),
       },
     });
+
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
+    revalidatePath("/doctor");
 
     return {
       success: true,
@@ -508,7 +524,7 @@ export async function getAvailableTimeSlots(doctorId) {
     }
 
     const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
+    const todayStr = getClinicDateString(now);
 
     const [weeklySchedules, overrides, legacyAvailability] = await Promise.all([
       db.weeklyAvailability
@@ -554,39 +570,42 @@ export async function getAvailableTimeSlots(doctorId) {
       overrides.map((o) => [o.date, o])
     );
 
-    // Build date list: next 14 days + any additional open calendar overrides beyond 14 days
-    const dayMap = new Map();
+    // Build unique sorted list of YYYY-MM-DD date strings: next 14 calendar days + open overrides
+    const dateStringsSet = new Set();
     for (let offset = 0; offset < 14; offset++) {
-      const d = addDays(now, offset);
-      dayMap.set(format(d, "yyyy-MM-dd"), d);
+      dateStringsSet.add(addDaysToDateString(todayStr, offset));
     }
     for (const ov of overrides) {
-      if (!ov.isBlocked && ov.startTime && ov.endTime && !dayMap.has(ov.date)) {
-        dayMap.set(ov.date, new Date(`${ov.date}T00:00:00`));
+      if (!ov.isBlocked && ov.startTime && ov.endTime && ov.date >= todayStr) {
+        dateStringsSet.add(ov.date);
       }
     }
 
-    const days = Array.from(dayMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([, dateObj]) => dateObj);
+    const sortedDateStrings = Array.from(dateStringsSet).sort();
 
     // Fetch existing appointments covering the whole date window
-    const lastDay = endOfDay(days[days.length - 1]);
+    const firstDateUtc = clinicTimeToUtcDate(sortedDateStrings[0], "00:00");
+    const lastDateUtc = clinicTimeToUtcDate(
+      sortedDateStrings[sortedDateStrings.length - 1],
+      "23:59"
+    );
+
     const existingAppointments = await db.appointment.findMany({
       where: {
         doctorId: doctor.id,
         status: { in: ["SCHEDULED", "IN_PROGRESS"] },
         startTime: {
-          lte: lastDay,
+          gte: firstDateUtc,
+          lte: lastDateUtc,
         },
       },
     });
 
     const result = [];
 
-    for (const day of days) {
-      const dayString = format(day, "yyyy-MM-dd");
-      const displayDate = format(day, "EEEE, MMMM d");
+    for (const dayString of sortedDateStrings) {
+      const displayDate = formatClinicDateStr(dayString);
+      const dayOfWeek = getClinicDayOfWeekFromDateStr(dayString);
       const override = overrideByDate.get(dayString);
 
       // Excluded if explicitly marked unavailable on this calendar date
@@ -601,83 +620,66 @@ export async function getAvailableTimeSlots(doctorId) {
         continue;
       }
 
-      let windowStart = null;
-      let windowEnd = null;
+      let winStartTime = null;
+      let winEndTime = null;
 
       if (override && !override.isBlocked && override.startTime && override.endTime) {
-        const [sH, sM] = override.startTime.split(":").map(Number);
-        const [eH, eM] = override.endTime.split(":").map(Number);
-        windowStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), sH, sM, 0, 0);
-        windowEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), eH, eM, 0, 0);
+        winStartTime = override.startTime;
+        winEndTime = override.endTime;
       } else {
-        const weekly = weeklyByDay.get(day.getDay());
+        const weekly = weeklyByDay.get(dayOfWeek);
         if (weekly) {
-          const [sH, sM] = weekly.startTime.split(":").map(Number);
-          const [eH, eM] = weekly.endTime.split(":").map(Number);
-          windowStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), sH, sM, 0, 0);
-          windowEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), eH, eM, 0, 0);
+          winStartTime = weekly.startTime;
+          winEndTime = weekly.endTime;
         } else if (!hasStructuredSchedule && legacyAvailability) {
-          const legacyStart = new Date(legacyAvailability.startTime);
-          const legacyEnd = new Date(legacyAvailability.endTime);
-          windowStart = new Date(
-            day.getFullYear(),
-            day.getMonth(),
-            day.getDate(),
-            legacyStart.getHours(),
-            legacyStart.getMinutes(),
-            0,
-            0
-          );
-          windowEnd = new Date(
-            day.getFullYear(),
-            day.getMonth(),
-            day.getDate(),
-            legacyEnd.getHours(),
-            legacyEnd.getMinutes(),
-            0,
-            0
-          );
+          winStartTime = formatInClinicTz(legacyAvailability.startTime, "HH:mm");
+          winEndTime = formatInClinicTz(legacyAvailability.endTime, "HH:mm");
         }
       }
 
       const daySlots = [];
 
-      if (windowStart && windowEnd && isBefore(windowStart, windowEnd)) {
-        let current = new Date(windowStart);
-        const end = new Date(windowEnd);
+      if (winStartTime && winEndTime && winStartTime < winEndTime) {
+        let slotStartStr = winStartTime;
 
-        while (
-          isBefore(addMinutes(current, 30), end) ||
-          +addMinutes(current, 30) === +end
-        ) {
-          const next = addMinutes(current, 30);
-
-          // Skip past or already-started slots
-          if (current.getTime() <= now.getTime()) {
-            current = next;
-            continue;
+        while (true) {
+          const slotEndStr = addMinutesToHHMM(slotStartStr, 30);
+          if (slotEndStr > winEndTime) {
+            break;
           }
 
-          const overlaps = existingAppointments.some((appointment) => {
-            const aStart = new Date(appointment.startTime);
-            const aEnd = new Date(appointment.endTime);
+          const currentUtc = clinicTimeToUtcDate(dayString, slotStartStr);
+          const nextUtc = clinicTimeToUtcDate(dayString, slotEndStr);
 
-            return (
-              (current >= aStart && current < aEnd) ||
-              (next > aStart && next <= aEnd) ||
-              (current <= aStart && next >= aEnd)
-            );
-          });
+          // Skip past or already-started slots for today
+          if (currentUtc.getTime() > now.getTime()) {
+            const overlaps = existingAppointments.some((appointment) => {
+              const aStart = new Date(appointment.startTime);
+              const aEnd = new Date(appointment.endTime);
 
-          daySlots.push({
-            startTime: current.toISOString(),
-            endTime: next.toISOString(),
-            formatted: `${format(current, "h:mm a")} - ${format(next, "h:mm a")}`,
-            day: displayDate,
-            isBooked: overlaps,
-          });
+              return (
+                (currentUtc >= aStart && currentUtc < aEnd) ||
+                (nextUtc > aStart && nextUtc <= aEnd) ||
+                (currentUtc <= aStart && nextUtc >= aEnd)
+              );
+            });
 
-          current = next;
+            const formattedStartTime = formatTime12h(slotStartStr);
+            const formattedEndTime = formatTime12h(slotEndStr);
+            const formatted = `${formattedStartTime} - ${formattedEndTime}`;
+
+            daySlots.push({
+              startTime: currentUtc.toISOString(),
+              endTime: nextUtc.toISOString(),
+              formatted,
+              formattedStartTime,
+              formattedEndTime,
+              day: displayDate,
+              isBooked: overlaps,
+            });
+          }
+
+          slotStartStr = slotEndStr;
         }
       }
 
@@ -732,7 +734,7 @@ export async function rescheduleAppointment(formData) {
       );
     }
 
-    const targetDateStr = format(newStartTime, "yyyy-MM-dd");
+    const targetDateStr = formatInClinicTz(newStartTime, "yyyy-MM-dd");
 
     // 1. Read-only validation & doctor schedule lookup OUTSIDE the transaction
     // so parallel queries run fast across the pool and do not hold a transaction lock.
@@ -793,7 +795,7 @@ export async function rescheduleAppointment(formData) {
             where: {
               doctorId_dayOfWeek: {
                 doctorId: appointment.doctorId,
-                dayOfWeek: newStartTime.getDay(),
+                dayOfWeek: getClinicDayOfWeek(newStartTime),
               },
             },
           })
@@ -812,10 +814,11 @@ export async function rescheduleAppointment(formData) {
       throw new Error("Doctor is unavailable on the selected date.");
     }
 
-    const slotStartHHMM = format(newStartTime, "HH:mm");
-    const slotEndHHMM = format(newEndTime, "HH:mm");
+    const slotStartHHMM = formatInClinicTz(newStartTime, "HH:mm");
+    const slotEndHHMM = formatInClinicTz(newEndTime, "HH:mm");
     const sameDaySlot =
-      format(newStartTime, "yyyy-MM-dd") === format(newEndTime, "yyyy-MM-dd");
+      formatInClinicTz(newStartTime, "yyyy-MM-dd") ===
+      formatInClinicTz(newEndTime, "yyyy-MM-dd");
 
     if (override && !override.isBlocked && override.startTime && override.endTime) {
       if (!sameDaySlot || slotStartHHMM < override.startTime || slotEndHHMM > override.endTime) {

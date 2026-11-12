@@ -501,7 +501,7 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
                             >
                               <Clock className="h-3.5 w-3.5 shrink-0" />
                               <span className={isBooked ? "line-through" : ""}>
-                                {format(new Date(slot.startTime), "h:mm a")}
+                                {slot.formattedStartTime || format(new Date(slot.startTime), "h:mm a")}
                               </span>
                             </button>
                           );
@@ -519,7 +519,7 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
                       <div className="p-4 sm:p-5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
                         <div className="space-y-1">
                           <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
-                            Confirming: {format(new Date(selectedSlot.startTime), "EEEE, MMM d")} at {selectedSlot.formatted}
+                            Confirming: {selectedSlot.day || format(new Date(selectedSlot.startTime), "EEEE, MMM d")} at {selectedSlot.formatted}
                           </p>
                           <p className="text-sm text-slate-600 dark:text-slate-400">
                             Attending Doctor: Dr. {doctorDisplayName}

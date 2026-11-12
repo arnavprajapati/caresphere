@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { createAuditLog } from "@/lib/rbac";
+import { getClinicDateString } from "@/lib/date-utils";
 
 /**
  * Set doctor's availability slots
@@ -71,6 +72,8 @@ export async function setAvailabilitySlots(formData) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/doctors", "layout");
     revalidatePath("/front-desk");
     return { success: true, slot: newSlot };
@@ -102,7 +105,7 @@ export async function getDoctorAvailability() {
       return { slots: [], weeklySchedule: [], overrides: [] };
     }
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getClinicDateString(new Date());
 
     const [availabilitySlots, weeklySchedule, overrides] = await Promise.all([
       db.availability.findMany({
@@ -218,6 +221,8 @@ export async function saveWeeklyAvailability(scheduleItems) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/doctors", "layout");
     revalidatePath("/front-desk");
     return { success: true, weeklySchedule: updated };
@@ -292,6 +297,8 @@ export async function setDateAvailabilityOverride({
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/doctors", "layout");
     revalidatePath("/front-desk");
     return { success: true, override };
@@ -334,6 +341,8 @@ export async function deleteDateAvailabilityOverride(overrideId) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/doctors", "layout");
     revalidatePath("/front-desk");
     return { success: true };
@@ -531,6 +540,8 @@ export async function cancelAppointment(formData) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/appointments");
     revalidatePath("/front-desk");
 
@@ -630,6 +641,8 @@ export async function addAppointmentNotes(formData) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/appointments");
     return {
       success: true,
@@ -664,15 +677,22 @@ export async function markAppointmentCompleted(formData) {
   }
 
   try {
-    const doctor = await db.user.findUnique({
+    const currentUser = await db.user.findUnique({
       where: {
         clerkUserId: userId,
-        role: "DOCTOR",
       },
     });
 
-    if (!doctor) {
-      throw new Error("Doctor not found");
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    const isDoctor = currentUser.role === "DOCTOR";
+    const isStaff =
+      currentUser.role === "FRONT_DESK" || currentUser.role === "ADMIN";
+
+    if (!isDoctor && !isStaff) {
+      throw new Error("Unauthorized");
     }
 
     const appointmentId = formData.get("appointmentId");
@@ -684,7 +704,7 @@ export async function markAppointmentCompleted(formData) {
     const appointment = await db.appointment.findUnique({
       where: {
         id: appointmentId,
-        doctorId: doctor.id,
+        ...(isDoctor ? { doctorId: currentUser.id } : {}),
       },
       include: {
         patient: true,
@@ -720,11 +740,12 @@ export async function markAppointmentCompleted(formData) {
     }
 
     const now = new Date();
-    const appointmentEndTime = new Date(appointment.endTime);
+    const appointmentStartTime = new Date(appointment.startTime);
+    const hasVisitRecord = Boolean(appointment.visitRecord);
 
-    if (now < appointmentEndTime) {
+    if (!hasVisitRecord && now < appointmentStartTime) {
       throw new Error(
-        "Cannot mark appointment as completed before the scheduled end time"
+        "Cannot mark appointment as completed before the scheduled start time"
       );
     }
 
@@ -738,6 +759,8 @@ export async function markAppointmentCompleted(formData) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     return { success: true, appointment: updatedAppointment };
   } catch (error) {
     console.error("Failed to mark appointment as completed:", error);
@@ -787,6 +810,8 @@ export async function updateDoctorConsultationFee(fee) {
     });
 
     revalidatePath("/doctor");
+    revalidatePath("/front-desk");
+    revalidatePath("/appointments");
     revalidatePath("/doctors", "layout");
     revalidatePath("/front-desk");
     return { success: true, consultationFee: updated.consultationFee };

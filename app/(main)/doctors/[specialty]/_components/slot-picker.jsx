@@ -93,7 +93,7 @@ export function SlotPicker({ days, onSelectSlot }) {
                               isSelected ? "text-white" : "text-slate-800"
                             }`}
                           >
-                            {format(new Date(slot.startTime), "h:mm a")}
+                            {slot.formattedStartTime || format(new Date(slot.startTime), "h:mm a")}
                           </span>
                         </CardContent>
                       </Card>
