@@ -173,12 +173,13 @@ export function AppointmentCard({
 
   const canMarkCompleted = () => {
     if (
-      userRole !== "DOCTOR" ||
+      !["DOCTOR", "FRONT_DESK", "ADMIN"].includes(userRole) ||
       !["SCHEDULED", "IN_PROGRESS"].includes(appointment.status)
     ) {
       return false;
     }
-    return new Date() >= new Date(appointment.endTime);
+    const hasVisitRecord = Boolean(activeVisitRecord);
+    return hasVisitRecord || new Date() >= new Date(appointment.startTime);
   };
 
   const refreshView = () => {
@@ -204,8 +205,9 @@ export function AppointmentCard({
 
   const handleMarkCompleted = async () => {
     if (completeLoading) return;
-    if (new Date() < new Date(appointment.endTime)) {
-      toast.error("Cannot mark appointment as completed before the scheduled end time.");
+    const hasVisitRecord = Boolean(activeVisitRecord);
+    if (!hasVisitRecord && new Date() < new Date(appointment.startTime)) {
+      toast.error("Cannot mark appointment as completed before the scheduled start time.");
       return;
     }
     if (
@@ -300,7 +302,7 @@ export function AppointmentCard({
 
   useEffect(() => {
     if (visitData?.success) {
-      toast.success("Visit record and diagnostic report metadata saved");
+      toast.success("Visit record and diagnostic report saved");
       setAction(null);
       refreshView();
     }
@@ -689,7 +691,7 @@ export function AppointmentCard({
                                 : "bg-white border-slate-300 text-black hover:bg-slate-100"
                             }`}
                           >
-                            {formatTime(slot.startTime)}
+                            {slot.formattedStartTime || formatTime(slot.startTime)}
                           </button>
                         );
                       })}

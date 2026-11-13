@@ -183,3 +183,56 @@ export async function checkInAppointment(appointmentId) {
 
   return { success: true, appointment: updated };
 }
+
+/**
+ * Mark an in-progress or scheduled appointment as COMPLETED (Front-Desk & Admin).
+ */
+export async function completeAppointment(appointmentId) {
+  const staffUser = await requireRole([ROLES.FRONT_DESK, ROLES.ADMIN], {
+    redirectOnError: false,
+  });
+
+  if (!appointmentId) {
+    throw new Error("Appointment ID is required.");
+  }
+
+  const appointment = await db.appointment.findUnique({
+    where: { id: String(appointmentId) },
+  });
+
+  if (!appointment) {
+    throw new Error("Appointment not found.");
+  }
+
+  if (appointment.status === "COMPLETED") {
+    return { success: true, appointment };
+  }
+
+  if (!["SCHEDULED", "IN_PROGRESS"].includes(appointment.status)) {
+    throw new Error("Only scheduled or in-progress appointments can be completed.");
+  }
+
+  const updated = await db.appointment.update({
+    where: { id: appointment.id },
+    data: { status: "COMPLETED" },
+  });
+
+  await createAuditLog({
+    action: "COMPLETE_APPOINTMENT",
+    resourceType: "Appointment",
+    resourceId: appointment.id,
+    details: {
+      patientId: appointment.patientId,
+      doctorId: appointment.doctorId,
+      previousStatus: appointment.status,
+      newStatus: "COMPLETED",
+    },
+    userId: staffUser.id,
+  });
+
+  revalidatePath("/front-desk");
+  revalidatePath("/appointments");
+  revalidatePath("/doctor");
+
+  return { success: true, appointment: updated };
+}

@@ -14,12 +14,30 @@ export async function getDoctorEarnings() {
 
     if (!doctor) return null;
 
-    const completedAppointments = await db.appointment.count({
-      where: { doctorId: doctor.id, status: "COMPLETED" },
+    const qualifyingAppointments = await db.appointment.findMany({
+      where: {
+        doctorId: doctor.id,
+        OR: [
+          { status: "COMPLETED" },
+          { invoice: { status: "PAID" } },
+        ],
+      },
+      include: {
+        invoice: {
+          select: { totalAmount: true, status: true },
+        },
+      },
     });
 
     const fee = doctor.consultationFee || 500;
-    const totalEarnings = completedAppointments * fee;
+    const completedAppointments = qualifyingAppointments.length;
+    const totalEarnings = qualifyingAppointments.reduce((sum, apt) => {
+      const amount =
+        apt.invoice?.status === "PAID" && typeof apt.invoice?.totalAmount === "number"
+          ? apt.invoice.totalAmount
+          : fee;
+      return sum + amount;
+    }, 0);
 
     return {
       totalEarnings,

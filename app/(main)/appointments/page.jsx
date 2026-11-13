@@ -121,8 +121,8 @@ export default async function PatientAppointmentsPage() {
                 </h3>
                 <p className="text-sm text-slate-600 max-w-sm mx-auto mb-5">
                   {isStaffViewer
-                    ? "No patient appointments have been booked yet. Browse verified specialists to schedule a consultation."
-                    : "You have not booked any appointments yet. Browse verified specialists and schedule your consultation."}
+                    ? "No patient appointments have been booked yet"
+                    : "You have not booked any appointments yet."}
                 </p>
                 <Link href="/doctors" className="inline-block cursor-pointer">
                   <Button className="bg-black hover:bg-neutral-900 text-white font-semibold rounded-md px-6 h-10 cursor-pointer shadow-none">

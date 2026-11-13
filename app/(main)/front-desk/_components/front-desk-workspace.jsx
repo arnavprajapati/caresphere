@@ -24,6 +24,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   PlusCircle,
   Search,
   UserPlus,
@@ -33,6 +41,9 @@ import {
   Loader2,
   X,
   LogIn,
+  CreditCard,
+  Video,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,7 +54,9 @@ import {
   searchPatients,
   registerWalkInPatient,
   checkInAppointment,
+  completeAppointment,
 } from "@/actions/front-desk";
+import { processPayment } from "@/actions/billing";
 
 export function FrontDeskWorkspace({
   initialPatients = [],
@@ -56,6 +69,7 @@ export function FrontDeskWorkspace({
   // Queue state synced with server props
   const [queue, setQueue] = useState(todayAppointments);
   const [checkingInId, setCheckingInId] = useState(null);
+  const [completingId, setCompletingId] = useState(null);
 
   useEffect(() => {
     setQueue(todayAppointments);
@@ -86,6 +100,9 @@ export function FrontDeskWorkspace({
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [patientDescription, setPatientDescription] = useState("");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [settlingInvoice, setSettlingInvoice] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("UPI");
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setNowMs(Date.now()), 30000);
@@ -319,6 +336,58 @@ export function FrontDeskWorkspace({
       toast.error(error?.message || "Failed to check in patient.");
     } finally {
       setCheckingInId(null);
+    }
+  };
+
+  const handleComplete = async (appointmentId) => {
+    if (completingId) return;
+    setCompletingId(appointmentId);
+    try {
+      const res = await completeAppointment(appointmentId);
+      if (res?.success) {
+        setQueue((prev) =>
+          prev.map((apt) =>
+            apt.id === appointmentId ? { ...apt, status: "COMPLETED" } : apt
+          )
+        );
+        toast.success("Consultation marked as completed successfully!");
+        router.refresh();
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to complete appointment.");
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
+  const handleCollectPayment = async (e) => {
+    e?.preventDefault();
+    if (!settlingInvoice || paymentLoading) return;
+    setPaymentLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("invoiceId", settlingInvoice.invoice.id);
+      formData.append("amount", settlingInvoice.invoice.totalAmount);
+      formData.append("paymentMethod", paymentMethod);
+      const res = await processPayment(formData);
+      if (res?.invoice) {
+        setQueue((prev) =>
+          prev.map((apt) =>
+            apt.id === settlingInvoice.id
+              ? { ...apt, invoice: res.invoice }
+              : apt
+          )
+        );
+        toast.success(
+          `Payment of ₹${settlingInvoice.invoice.totalAmount} collected successfully via ${paymentMethod}!`
+        );
+        setSettlingInvoice(null);
+        router.refresh();
+      }
+    } catch (err) {
+      toast.error(err?.message || "Failed to record payment.");
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
@@ -873,10 +942,23 @@ export function FrontDeskWorkspace({
                       className="hover:bg-slate-50 transition-colors"
                     >
                       <td className="px-6 py-4 font-mono font-medium text-slate-800 whitespace-nowrap">
-                        {new Date(apt.startTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        <div className="flex flex-col gap-1">
+                          <span>
+                            {new Date(apt.startTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          {apt.videoSessionId ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded w-fit">
+                              <Video className="h-2.5 w-2.5" /> Video Call
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded w-fit">
+                              In-Person
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className="font-bold text-black text-sm sm:text-base">
@@ -898,32 +980,43 @@ export function FrontDeskWorkspace({
                         <Badge
                           variant="outline"
                           className={
-                            apt.status === "COMPLETED" ||
-                            apt.status === "IN_PROGRESS"
+                            apt.status === "COMPLETED"
                               ? "bg-black text-white border-black rounded-md text-xs sm:text-sm font-semibold"
+                              : apt.status === "IN_PROGRESS"
+                              ? "bg-blue-600 text-white border-blue-600 rounded-md text-xs sm:text-sm font-semibold"
                               : apt.status === "CANCELLED"
                               ? "bg-slate-200 text-slate-800 border-slate-300 rounded-md text-xs sm:text-sm font-semibold"
                               : "bg-slate-100 text-black border-slate-300 rounded-md text-xs sm:text-sm font-semibold"
                           }
                         >
                           {apt.status === "IN_PROGRESS"
-                            ? "CHECKED IN"
+                            ? "IN CONSULTATION"
                             : apt.status}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {apt.invoice ? (
-                          <Badge
-                            variant="outline"
-                            className={
-                              apt.invoice.status === "PAID"
-                                ? "bg-black text-white border-black rounded-md text-xs sm:text-sm font-semibold"
-                                : "bg-slate-100 text-black border-slate-300 rounded-md text-xs sm:text-sm font-semibold"
-                            }
-                          >
-                            ₹{apt.invoice.totalAmount} &bull;{" "}
-                            {apt.invoice.status}
-                          </Badge>
+                          apt.invoice.status === "PAID" ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-emerald-600 text-white border-emerald-600 rounded-md text-xs sm:text-sm font-semibold"
+                            >
+                              ₹{apt.invoice.totalAmount} &bull; PAID
+                            </Badge>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSettlingInvoice(apt);
+                                setPaymentMethod("UPI");
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 cursor-pointer transition-colors"
+                              title="Click to collect payment"
+                            >
+                              <CreditCard className="h-3.5 w-3.5 text-amber-700" />
+                              ₹{apt.invoice.totalAmount} &bull; UNPAID
+                            </button>
+                          )
                         ) : (
                           <span className="text-sm text-slate-500">
                             Pending
@@ -931,30 +1024,64 @@ export function FrontDeskWorkspace({
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        {apt.status === "SCHEDULED" ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={checkingInId === apt.id}
-                            onClick={() => handleCheckIn(apt.id)}
-                            className="bg-black hover:bg-neutral-900 text-white rounded-md text-xs sm:text-sm font-semibold h-9 px-3.5 cursor-pointer shadow-none"
-                          >
-                            {checkingInId === apt.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <>
-                                <LogIn className="h-3.5 w-3.5 mr-1.5" />
-                                Check In
-                              </>
-                            )}
-                          </Button>
-                        ) : apt.status === "IN_PROGRESS" ? (
-                          <span className="text-sm font-semibold text-slate-700">
-                            Arrived
-                          </span>
-                        ) : (
-                          <span className="text-sm text-slate-400">—</span>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {apt.status === "SCHEDULED" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={checkingInId === apt.id}
+                              onClick={() => handleCheckIn(apt.id)}
+                              className="bg-black hover:bg-neutral-900 text-white rounded-md text-xs sm:text-sm font-semibold h-9 px-3.5 cursor-pointer shadow-none"
+                            >
+                              {checkingInId === apt.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                                  Check In
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          {apt.invoice && apt.invoice.status !== "PAID" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSettlingInvoice(apt);
+                                setPaymentMethod("UPI");
+                              }}
+                              className="rounded-md border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-semibold h-9 px-3 cursor-pointer shadow-none"
+                            >
+                              <CreditCard className="h-3.5 w-3.5 mr-1" />
+                              Collect Fee
+                            </Button>
+                          )}
+                          {apt.status === "IN_PROGRESS" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={completingId === apt.id}
+                              onClick={() => handleComplete(apt.id)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs sm:text-sm font-semibold h-9 px-3.5 cursor-pointer shadow-none flex items-center gap-1.5"
+                            >
+                              {completingId === apt.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  Complete Visit
+                                </>
+                              )}
+                            </Button>
+                          )}
+                          {apt.status === "COMPLETED" && (
+                            <span className="text-xs sm:text-sm font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                              Completed
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -964,6 +1091,117 @@ export function FrontDeskWorkspace({
           )}
         </CardContent>
       </Card>
+
+      {/* Collect Fee / Invoice Settlement Dialog */}
+      <Dialog
+        open={Boolean(settlingInvoice)}
+        onOpenChange={(open) => !open && setSettlingInvoice(null)}
+      >
+        <DialogContent className="sm:max-w-md bg-white text-black p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-black flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-black" />
+              Collect Consultation Fee
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600">
+              Record payment settlement for this patient appointment.
+            </DialogDescription>
+          </DialogHeader>
+
+          {settlingInvoice && (
+            <form onSubmit={handleCollectPayment} className="space-y-4 pt-2">
+              <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Patient:</span>
+                  <span className="font-bold text-black">
+                    {settlingInvoice.patient?.name || "Patient"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Attending Doctor:</span>
+                  <span className="font-bold text-black">
+                    Dr. {settlingInvoice.doctor?.name} ({settlingInvoice.doctor?.specialty})
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Appointment:</span>
+                  <span className="font-medium text-slate-800">
+                    {new Date(settlingInvoice.startTime).toLocaleDateString([], {
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    at{" "}
+                    {new Date(settlingInvoice.startTime).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
+                  <span className="text-sm font-bold text-black">Total Amount:</span>
+                  <span className="text-xl font-extrabold text-black">
+                    ₹{settlingInvoice.invoice?.totalAmount || settlingInvoice.doctor?.consultationFee || 500}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Payment Method
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {["UPI", "CASH", "CARD", "ONLINE"].map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setPaymentMethod(method)}
+                      className={`py-2.5 px-3 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                        paymentMethod === method
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {paymentMethod === method && (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                      {method}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <DialogFooter className="pt-3 border-t border-slate-200 flex sm:justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSettlingInvoice(null)}
+                  disabled={paymentLoading}
+                  className="rounded-md border-slate-300 text-black hover:bg-slate-100 text-xs font-semibold h-10 px-4 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={paymentLoading}
+                  className="bg-black hover:bg-neutral-900 text-white rounded-md text-xs font-semibold h-10 px-5 cursor-pointer shadow-none"
+                >
+                  {paymentLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Recording...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirm & Mark Paid
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
