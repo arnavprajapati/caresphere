@@ -58,7 +58,7 @@ export default function DoctorAppointmentsList() {
               No upcoming appointments
             </h3>
             <p className="text-sm text-slate-600 max-w-md mx-auto">
-              You do not have any scheduled patient consultations. Set your working hours and available slots under the Working Availability tab.
+              You do not have any scheduled patient consultations.
             </p>
           </div>
         )}

@@ -44,6 +44,7 @@ import {
   CreditCard,
   Video,
   CheckCircle,
+  Building2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -99,6 +100,7 @@ export function FrontDeskWorkspace({
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [patientDescription, setPatientDescription] = useState("");
+  const [bookingConsultationType, setBookingConsultationType] = useState("IN_PERSON");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [settlingInvoice, setSettlingInvoice] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("UPI");
@@ -291,13 +293,16 @@ export function FrontDeskWorkspace({
       formData.append("startTime", selectedSlot.startTime);
       formData.append("endTime", selectedSlot.endTime);
       formData.append("patientDescription", patientDescription);
+      formData.append("consultationType", bookingConsultationType);
 
       const res = await bookAppointment(formData);
       if (res?.success) {
         toast.success(
-          `Appointment booked for ${selectedPatient.name} with Dr. ${selectedDoctor.name}.`
+          bookingConsultationType === "IN_PERSON"
+            ? `In-person clinic appointment booked for ${selectedPatient.name} with Dr. ${selectedDoctor.name}.`
+            : `Video consultation booked for ${selectedPatient.name} with Dr. ${selectedDoctor.name}.`
         );
-        if (!res.videoSessionReady && res.videoWarning) {
+        if (bookingConsultationType === "VIDEO" && !res.videoSessionReady && res.videoWarning) {
           toast.warning(`Video session unavailable: ${res.videoWarning}`);
         }
         setSelectedSlot(null);
@@ -817,6 +822,48 @@ export function FrontDeskWorkspace({
                 )}
               </div>
 
+              <div className="space-y-2 pt-2 border-t border-slate-200">
+                <Label className="text-sm font-semibold text-black">
+                  3. Consultation Modality *
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setBookingConsultationType("IN_PERSON")}
+                    className={`p-3.5 rounded-lg border text-left flex items-start gap-3 transition-colors cursor-pointer ${
+                      bookingConsultationType === "IN_PERSON"
+                        ? "border-black bg-slate-100 text-black font-bold ring-1 ring-black"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Building2 className="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" />
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold">In-Person Hospital Visit</p>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Walk-in clinic visit at CareSphere Hospital
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBookingConsultationType("VIDEO")}
+                    className={`p-3.5 rounded-lg border text-left flex items-start gap-3 transition-colors cursor-pointer ${
+                      bookingConsultationType === "VIDEO"
+                        ? "border-black bg-slate-100 text-black font-bold ring-1 ring-black"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Video className="h-4 w-4 mt-0.5 shrink-0 text-blue-600" />
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold">Online Video Call</p>
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Remote consultation via live video session
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               {/* Step 4: Notes & Confirm */}
               <div className="space-y-4">
                 <div className="space-y-1.5">
@@ -950,12 +997,12 @@ export function FrontDeskWorkspace({
                             })}
                           </span>
                           {apt.videoSessionId ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded w-fit">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded w-fit">
                               <Video className="h-2.5 w-2.5" /> Video Call
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded w-fit">
-                              In-Person
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded w-fit">
+                              <Building2 className="h-2.5 w-2.5" /> In-Person Visit
                             </span>
                           )}
                         </div>
@@ -997,12 +1044,17 @@ export function FrontDeskWorkspace({
                       <td className="px-6 py-4 whitespace-nowrap">
                         {apt.invoice ? (
                           apt.invoice.status === "PAID" ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-emerald-600 text-white border-emerald-600 rounded-md text-xs sm:text-sm font-semibold"
-                            >
-                              ₹{apt.invoice.totalAmount} &bull; PAID
-                            </Badge>
+                            <div className="flex flex-col gap-0.5">
+                              <Badge
+                                variant="outline"
+                                className="bg-emerald-600 text-white border-emerald-600 rounded-md text-xs sm:text-sm font-semibold w-fit"
+                              >
+                                ₹{apt.invoice.totalAmount} &bull; PAID
+                              </Badge>
+                              <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3" /> Credited to Doctor
+                              </span>
+                            </div>
                           ) : (
                             <button
                               type="button"

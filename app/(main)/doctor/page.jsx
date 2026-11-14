@@ -35,11 +35,11 @@ export default async function DoctorDashboardPage() {
     >
       <TabsList className="lg:sticky lg:top-20 !bg-white border border-slate-200 shadow-none h-auto flex flex-col w-full p-2 rounded-lg space-y-1">
         <TabsTrigger
-          value="profile"
+          value="appointments"
           className="cursor-pointer flex items-center justify-start px-3.5 py-2.5 w-full rounded-md text-sm font-medium !bg-white !text-slate-800 hover:!bg-slate-100 hover:!text-black data-[state=active]:!bg-black data-[state=active]:!text-white data-[state=active]:font-semibold transition-colors shadow-none"
         >
-          <User className="h-4 w-4 mr-2.5 shrink-0" />
-          <span>Professional Profile</span>
+          <Calendar className="h-4 w-4 mr-2.5 shrink-0" />
+          <span>Patient Appointments</span>
         </TabsTrigger>
         <TabsTrigger
           value="earnings"
@@ -49,18 +49,19 @@ export default async function DoctorDashboardPage() {
           <span>Earnings & Metrics</span>
         </TabsTrigger>
         <TabsTrigger
-          value="appointments"
-          className="cursor-pointer flex items-center justify-start px-3.5 py-2.5 w-full rounded-md text-sm font-medium !bg-white !text-slate-800 hover:!bg-slate-100 hover:!text-black data-[state=active]:!bg-black data-[state=active]:!text-white data-[state=active]:font-semibold transition-colors shadow-none"
-        >
-          <Calendar className="h-4 w-4 mr-2.5 shrink-0" />
-          <span>Patient Appointments</span>
-        </TabsTrigger>
-        <TabsTrigger
           value="availability"
           className="cursor-pointer flex items-center justify-start px-3.5 py-2.5 w-full rounded-md text-sm font-medium !bg-white !text-slate-800 hover:!bg-slate-100 hover:!text-black data-[state=active]:!bg-black data-[state=active]:!text-white data-[state=active]:font-semibold transition-colors shadow-none"
         >
           <Clock className="h-4 w-4 mr-2.5 shrink-0" />
           <span>Working Availability</span>
+        </TabsTrigger>
+
+        <TabsTrigger
+          value="profile"
+          className="cursor-pointer flex items-center justify-start px-3.5 py-2.5 w-full rounded-md text-sm font-medium !bg-white !text-slate-800 hover:!bg-slate-100 hover:!text-black data-[state=active]:!bg-black data-[state=active]:!text-white data-[state=active]:font-semibold transition-colors shadow-none"
+        >
+          <User className="h-4 w-4 mr-2.5 shrink-0" />
+          <span>Professional Profile</span>
         </TabsTrigger>
       </TabsList>
       <div className="min-w-0">
@@ -88,8 +89,8 @@ export default async function DoctorDashboardPage() {
         </TabsContent>
         <TabsContent value="earnings" className="border-none p-0 mt-0">
           <DoctorEarnings
-            earnings={earningsData.earnings || {}}
-            payouts={payoutsData.payouts || []}
+            earnings={earningsData?.earnings || earningsData || {}}
+            payouts={payoutsData?.payouts || []}
           />
         </TabsContent>
       </div>
