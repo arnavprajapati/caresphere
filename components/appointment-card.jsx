@@ -29,6 +29,7 @@ import {
   Plus,
   Trash2,
   Pill,
+  Building2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -598,11 +599,22 @@ export function AppointmentCard({
               </div>
               <div className="space-y-1 sm:text-right">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Status
+                  Status &amp; Type
                 </h4>
-                <Badge variant="outline" className={statusBadgeClass}>
-                  {statusLabel}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+                  <Badge variant="outline" className={statusBadgeClass}>
+                    {statusLabel}
+                  </Badge>
+                  {Boolean(appointment.videoSessionId) ? (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-semibold">
+                      <Video className="h-3 w-3 mr-1" /> Video Call
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-300 text-xs font-semibold">
+                      <Building2 className="h-3 w-3 mr-1" /> In-Person
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -749,35 +761,51 @@ export function AppointmentCard({
               </div>
             )}
 
-            {/* Join Video Call Button (Patient & Doctor only) */}
             {["SCHEDULED", "IN_PROGRESS"].includes(appointment.status) &&
               !isStaffViewer && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Video Consultation
-                  </h4>
-                  <Button
-                    className="w-full bg-black hover:bg-neutral-900 text-white rounded-md font-semibold h-10 cursor-pointer shadow-none"
-                    disabled={
-                      !isAppointmentActive() || action === "video" || tokenLoading
-                    }
-                    onClick={handleJoinVideoCall}
-                  >
-                    {tokenLoading || action === "video" ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Preparing Video Call...
-                      </>
-                    ) : (
-                      <>
-                        <Video className="h-4 w-4 mr-2" />
-                        {isAppointmentActive()
-                          ? "Join Video Call"
-                          : "Video call will be available 30 minutes before appointment"}
-                      </>
-                    )}
-                  </Button>
-                </div>
+                Boolean(appointment.videoSessionId) ? (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Video className="h-3.5 w-3.5 text-blue-600" />
+                      Video Consultation
+                    </h4>
+                    <Button
+                      className="w-full bg-black hover:bg-neutral-900 text-white rounded-md font-semibold h-10 cursor-pointer shadow-none"
+                      disabled={
+                        !isAppointmentActive() || action === "video" || tokenLoading
+                      }
+                      onClick={handleJoinVideoCall}
+                    >
+                      {tokenLoading || action === "video" ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Preparing Video Call...
+                        </>
+                      ) : (
+                        <>
+                          <Video className="h-4 w-4 mr-2" />
+                          {isAppointmentActive()
+                            ? "Join Video Call"
+                            : "Video call will be available 30 minutes before appointment"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5 text-emerald-600" />
+                      In-Person Hospital Visit
+                    </h4>
+                    <div className="p-3.5 rounded-md bg-emerald-50/70 border border-emerald-200 text-xs sm:text-sm text-emerald-950 leading-relaxed">
+                      <p className="font-bold text-emerald-900 flex items-center gap-1.5 mb-1">
+                        <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                        In-Clinic Hospital Consultation
+                      </p>
+                      Please arrive at CareSphere Hospital Front-Desk 15 minutes prior to your appointment time for physical check-in and doctor chamber allocation. No video call required.
+                    </div>
+                  </div>
+                )
               )}
 
             {/* Visit Record, Prescriptions & Diagnostic Report Metadata (hidden from Front-Desk) */}

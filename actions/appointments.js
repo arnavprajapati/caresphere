@@ -192,10 +192,16 @@ export async function bookAppointment(formData) {
       throw new Error("Doctor not found or not verified");
     }
 
-    // Create Vonage video session when valid credentials are configured;
-    // never fabricate a fake session ID if initialization or API creation fails.
-    const videoResult = await createVideoSession();
-    const videoSessionId = videoResult.ok ? videoResult.sessionId : null;
+    const rawConsultationType = formData.get("consultationType");
+    const consultationType =
+      rawConsultationType === "IN_PERSON" ? "IN_PERSON" : "VIDEO";
+
+    let videoSessionId = null;
+    let videoResult = { ok: false };
+    if (consultationType === "VIDEO") {
+      videoResult = await createVideoSession();
+      videoSessionId = videoResult.ok ? videoResult.sessionId : null;
+    }
 
     const consultationFee = doctor.consultationFee || 500;
     const bookingDateStr = formatInClinicTz(startTime, "yyyy-MM-dd");
@@ -227,13 +233,24 @@ export async function bookAppointment(formData) {
         throw new Error("CONFLICT: This time slot has already been booked by another patient.");
       }
 
+      let finalDescription = patientDescription || "";
+      if (consultationType === "IN_PERSON") {
+        if (!finalDescription.includes("[In-Person")) {
+          finalDescription = `[In-Person Hospital Visit] ${finalDescription}`.trim();
+        }
+      } else {
+        if (!finalDescription.includes("[Video")) {
+          finalDescription = `[Video Consultation] ${finalDescription}`.trim();
+        }
+      }
+
       const appointment = await tx.appointment.create({
         data: {
           patientId,
           doctorId,
           startTime,
           endTime,
-          patientDescription,
+          patientDescription: finalDescription,
           videoSessionId,
           status: "SCHEDULED",
         },
@@ -257,7 +274,11 @@ export async function bookAppointment(formData) {
           lineItems: {
             create: [
               {
-                description: `Doctor Consultation - Dr. ${doctor.name} (${doctor.specialty || "General"})`,
+                description: `${
+                  consultationType === "IN_PERSON"
+                    ? "In-Clinic Consultation"
+                    : "Video Consultation"
+                } - Dr. ${doctor.name} (${doctor.specialty || "General"})`,
                 unitPrice: consultationFee,
                 quantity: 1,
                 amount: consultationFee,
@@ -274,7 +295,7 @@ export async function bookAppointment(formData) {
       action: "BOOK_APPOINTMENT",
       resourceType: "Appointment",
       resourceId: result.appointment.id,
-      details: { doctorId, patientId, startTime },
+      details: { doctorId, patientId, startTime, consultationType },
       userId: currentUser.id,
     });
 
@@ -285,8 +306,12 @@ export async function bookAppointment(formData) {
     return {
       success: true,
       appointment: result.appointment,
+      consultationType,
       videoSessionReady: Boolean(videoSessionId),
-      videoWarning: videoResult.ok ? null : videoResult.reason,
+      videoWarning:
+        consultationType === "VIDEO" && !videoResult.ok
+          ? videoResult.reason
+          : null,
     };
   } catch (error) {
     console.error("Failed to book appointment:", error);

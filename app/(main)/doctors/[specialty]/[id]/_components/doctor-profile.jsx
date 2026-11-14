@@ -27,6 +27,8 @@ import {
   Check,
   Loader2,
   Receipt,
+  Video,
+  Building2,
 } from "lucide-react";
 import {
   bookAppointment,
@@ -80,6 +82,7 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
   const [selectedDate, setSelectedDate] = useState(firstDay);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [description, setDescription] = useState("");
+  const [consultationType, setConsultationType] = useState("VIDEO");
 
   const [bookingLoading, setBookingLoading] = useState(false);
 
@@ -215,10 +218,15 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
       formData.append("startTime", selectedSlot.startTime);
       formData.append("endTime", selectedSlot.endTime);
       formData.append("patientDescription", description);
+      formData.append("consultationType", consultationType);
 
       const res = await bookAppointment(formData);
       if (res?.success) {
-        if (res.videoSessionReady) {
+        if (consultationType === "IN_PERSON") {
+          toast.success(
+            "In-person clinic appointment confirmed! Hospital invoice generated."
+          );
+        } else if (res.videoSessionReady) {
           toast.success(
             "Appointment booked with video session! Hospital invoice created."
           );
@@ -528,6 +536,48 @@ export function DoctorProfile({ doctor, availableDays = [], allDoctors = [] }) {
                         <div className="text-right shrink-0">
                           <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold">Total Fee</span>
                           <p className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-slate-100">₹{doctorFee}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                          Consultation Preference
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setConsultationType("VIDEO")}
+                            className={`p-3.5 rounded-lg border text-left flex items-start gap-3 transition-colors cursor-pointer ${
+                              consultationType === "VIDEO"
+                                ? "border-black bg-slate-100 text-black dark:border-white dark:bg-slate-800 dark:text-white font-bold ring-1 ring-black dark:ring-white"
+                                : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                            }`}
+                          >
+                            <Video className="h-5 w-5 mt-0.5 shrink-0 text-blue-600" />
+                            <div>
+                              <p className="text-sm font-bold">Online Video Call</p>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                Remote consultation via live HD video
+                              </p>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConsultationType("IN_PERSON")}
+                            className={`p-3.5 rounded-lg border text-left flex items-start gap-3 transition-colors cursor-pointer ${
+                              consultationType === "IN_PERSON"
+                                ? "border-black bg-slate-100 text-black dark:border-white dark:bg-slate-800 dark:text-white font-bold ring-1 ring-black dark:ring-white"
+                                : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50"
+                            }`}
+                          >
+                            <Building2 className="h-5 w-5 mt-0.5 shrink-0 text-emerald-600" />
+                            <div>
+                              <p className="text-sm font-bold">In-Person Hospital Visit</p>
+                              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                Physical appointment at CareSphere Hospital
+                              </p>
+                            </div>
+                          </button>
                         </div>
                       </div>
 
